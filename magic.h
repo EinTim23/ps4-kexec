@@ -299,4 +299,5 @@
 #define kern_off_set_pstate 0x4D6FC0
 #define kern_off_update_vddnp 0x4DE360
 #define kern_off_set_cu_power_gate 0x4DE770
+#define kern_off_pstate_before_shutdown 0x29A970
 #endif
