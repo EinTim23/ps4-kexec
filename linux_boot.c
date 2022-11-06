@@ -190,6 +190,38 @@ static void cleanup_interrupts(void)
 #define BPCIE_HPET_BASE         0x109000
 #define BPCIE_HPET_SIZE         0x400
 
+//GRBM
+#define		SOFT_RESET_CP					(1 << 0)
+#define		SOFT_RESET_CB					(1 << 1)
+#define		SOFT_RESET_RLC					(1 << 2)
+#define		SOFT_RESET_DB					(1 << 3)
+#define		SOFT_RESET_GDS					(1 << 4)
+#define		SOFT_RESET_PA					(1 << 5)
+#define		SOFT_RESET_SC					(1 << 6)
+#define		SOFT_RESET_BCI					(1 << 7)
+#define		SOFT_RESET_SPI					(1 << 8)
+#define		SOFT_RESET_SX					(1 << 10)
+#define		SOFT_RESET_TC					(1 << 11)
+#define		SOFT_RESET_TA					(1 << 12)
+#define		SOFT_RESET_VGT					(1 << 14)
+#define		SOFT_RESET_IA					(1 << 15)
+
+//SRBM
+#define		SOFT_RESET_BIF				(1 << 1)
+#define		SOFT_RESET_DC				(1 << 5)
+#define		SOFT_RESET_DMA1				(1 << 6)
+#define		SOFT_RESET_GRBM				(1 << 8)
+#define		SOFT_RESET_HDP				(1 << 9)
+#define		SOFT_RESET_IH				(1 << 10)
+#define		SOFT_RESET_MC				(1 << 11)
+#define		SOFT_RESET_ROM				(1 << 14)
+#define		SOFT_RESET_SEM				(1 << 15)
+#define		SOFT_RESET_VMC				(1 << 17)
+#define		SOFT_RESET_DMA				(1 << 20)
+#define		SOFT_RESET_TST				(1 << 21)
+#define		SOFT_RESET_REGBB			(1 << 22)
+#define		SOFT_RESET_ORB				(1 << 23)
+
 static void cpu_quiesce_gate(void *arg)
 {
 
@@ -365,27 +397,64 @@ static void cpu_quiesce_gate(void *arg)
 	
     uart_write_str("kexec: Resetting GPU...\n");
 
-    // Softreset GPU
+      // Softreset GPU
+    u32 grbm_soft_reset = 0, srbm_soft_reset = 0;
+    
+    //grbm
+    grbm_soft_reset = SOFT_RESET_CB |
+                      SOFT_RESET_DB |
+		      SOFT_RESET_GDS |
+		      SOFT_RESET_PA |
+		      SOFT_RESET_SC |
+		      SOFT_RESET_BCI |
+		      SOFT_RESET_SPI |
+		      SOFT_RESET_SX |
+		      SOFT_RESET_TC |
+		      SOFT_RESET_TA |
+		      SOFT_RESET_VGT |
+		      SOFT_RESET_IA;
+	
+    grbm_soft_reset |= SOFT_RESET_CP | SOFT_RESET_VGT;
+    grbm_soft_reset |= SOFT_RESET_RLC;
+	
+    //srmb
+    srbm_soft_reset |= SOFT_RESET_GRBM;
+    srbm_soft_reset |= SOFT_RESET_DMA;
+    srbm_soft_reset |= SOFT_RESET_DMA1;
+    srbm_soft_reset |= SOFT_RESET_DC;
+    srbm_soft_reset |= SOFT_RESET_SEM;
+    srbm_soft_reset |= SOFT_RESET_IH;
+    //srbm_soft_reset |= SOFT_RESET_GRBM;
+    srbm_soft_reset |= SOFT_RESET_VMC;
+    //srbm_soft_reset |= SOFT_RESET_MC;
+    
+    *(volatile u64 *)PA_TO_DM(0xe480C40C) = 0; // Disable PG
+    udelay(50);
+    *(volatile u64 *)PA_TO_DM(0xe480C424) &= ~(0x1 | 0x2); //Disable CG
+    udelay(50);
+    *(volatile u64 *)PA_TO_DM(0xe480c300) = 0; // Halt RLC
+    udelay(50);
     *(volatile u64 *)PA_TO_DM(0xe48086d8) = 0x15000000; // Halt CP blocks
+    udelay(50);
     *(volatile u64 *)PA_TO_DM(0xe4808234) = 0x50000000; // Halt MEC
-    *(volatile u64 *)PA_TO_DM(0xe480d048) = 1; // Halt SDMA0
-//  *(volatile u64 *)PA_TO_DM(0xe480d248) = 1; // Halt SDMA1 eeply
-	*(volatile u64 *)PA_TO_DM(0xe480d848) = 1; // Halt SDMA1
-	*(volatile u64 *)PA_TO_DM(0xe480c300) = 0; // Halt RLC
+    udelay(50);
+    
+    *(volatile u64 *)PA_TO_DM(0xe480d048) = 1; // Halt SDMA0 eeply
+    udelay(50);
+    *(volatile u64 *)PA_TO_DM(0xe480d848) = 1; // Halt SDMA1
+    udelay(50);
 	
-	*(volatile u64 *)PA_TO_DM(0xe480c1a8) &= ~0x180000; // CP_INT_CNTL_RING0 eeply
-
-//  *(volatile u64 *)PA_TO_DM(0xe4808020) |= 0x10003; // Softreset GFX/CP/RLC
-	*(volatile u64 *)PA_TO_DM(0xe4808020) |= 0x30005; // Softreset GFX/CP/RLC eeply
-	
-//    udelay(150);
-//  *(volatile u64 *)PA_TO_DM(0xe4808020) &= ~0x10003;
-	*(volatile u64 *)PA_TO_DM(0xe4808020) &= ~0x30005; //eeply
-//    udelay(150);
-    *(volatile u64 *)PA_TO_DM(0xe4800e60) |= 0x00100140; // Softreset SDMA/GRBM
-//    udelay(150);
-    *(volatile u64 *)PA_TO_DM(0xe4800e60) &= ~0x00100140;
-//    udelay(150);
+    *(volatile u64 *)PA_TO_DM(0xe480c1a8) &= ~0x180000; // CP_INT_CNTL_RING0 eeply
+    udelay(50);
+    
+    *(volatile u64 *)PA_TO_DM(0xe4808020) |= grbm_soft_reset;
+    udelay(50);
+    *(volatile u64 *)PA_TO_DM(0xe4808020) &= ~grbm_soft_reset;
+    udelay(50);
+    *(volatile u64 *)PA_TO_DM(0xe4800e60) |= srbm_soft_reset;
+    udelay(50);
+    *(volatile u64 *)PA_TO_DM(0xe4800e60) &= ~srbm_soft_reset;
+    udelay(100);
 
     // Enable audio output
     *(volatile u64 *)PA_TO_DM(0xe4805e00) = 0x154;
