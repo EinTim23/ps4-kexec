@@ -95,6 +95,7 @@ struct ksym_t {
     void(*set_pstate)(unsigned int val);
     void(*update_vddnp)(unsigned int val);
     void(*set_cu_power_gate)(unsigned int val);
+    void *pstate_before_shutdown;
 };
 
 extern struct ksym_t kern;

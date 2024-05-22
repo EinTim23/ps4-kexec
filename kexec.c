@@ -76,18 +76,19 @@ int sys_kexec(void *td, struct sys_kexec_args *uap)
         err = ENOENT;
         goto cleanup;
     }
-    
-    // Set gpu frequencies and pstate
+
+    // Set gpu frequencies and pstate   
+    //                      FAT&SLIM / PRO
     kern.set_pstate(3);
-    kern.set_gpu_freq(0, 800); //800
-    kern.set_gpu_freq(1, 800); //674
-    kern.set_gpu_freq(2, 800); //610
-    kern.set_gpu_freq(3, 800); //800
-    kern.set_gpu_freq(4, 800); //800
-    kern.set_gpu_freq(5, 800); //720
-    kern.set_gpu_freq(6, 800); //720
-    kern.set_gpu_freq(7, 800); //720
-    
+    kern.set_gpu_freq(0, 800); //800 //800
+    kern.set_gpu_freq(1, 673); //673 //853
+    kern.set_gpu_freq(2, 609); //610 //711
+    kern.set_gpu_freq(3, 800); //800 //800
+    kern.set_gpu_freq(4, 800); //800 //911
+    kern.set_gpu_freq(5, 711); //711 //800
+    kern.set_gpu_freq(6, 711); //711 //984 
+    kern.set_gpu_freq(7, 673); //673 //673
+
     kern.update_vddnp(0x12);
     kern.set_cu_power_gate(0x12);
     

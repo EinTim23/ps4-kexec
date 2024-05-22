@@ -140,6 +140,7 @@ static int resolve_symbols(void)
     RESOLVE(set_pstate);
     RESOLVE(update_vddnp);
     RESOLVE(set_cu_power_gate);
+    RESOLVE_NOERR(pstate_before_shutdown);
     return 1;
 }
 
